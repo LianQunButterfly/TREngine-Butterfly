@@ -7,8 +7,8 @@
 
 #include "glshader.h"
 #include "camera.h"
-
 #include <iostream>
+#include "openglCtypeAPI.h"
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
@@ -32,6 +32,7 @@ float lastFrame = 0.0f;
 // lighting
 glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
 
+
 int main()
 {
     // glfw: initialize and configure
@@ -41,9 +42,7 @@ int main()
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-#ifdef __APPLE__
-    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-#endif
+
 
     // glfw window creation
     // --------------------
@@ -80,6 +79,7 @@ int main()
     TREngine::GLShader lightCubeShader("1.light_cube.vs", "1.light_cube.fs");
 
     // set up vertex data (and buffer(s)) and configure vertex attributes
+    // ------------------------------------------------------------------
     // ------------------------------------------------------------------
     float vertices[] = {
         -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
@@ -125,34 +125,61 @@ int main()
         -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f
     };
     // first, configure the cube's VAO (and VBO)
-    unsigned int VBO, cubeVAO;
-    glGenVertexArrays(1, &cubeVAO);
-    glGenBuffers(1, &VBO);
-
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-    glBindVertexArray(cubeVAO);
-
+    
+  //  unsigned int VBO, cubeVAO;
+  //  glGenVertexArrays(1, &cubeVAO);
+  //  glGenBuffers(1, &VBO);
+//
+  //  glBindBuffer(GL_ARRAY_BUFFER, VBO);
+  //  glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+//
+  //  glBindVertexArray(cubeVAO);
+  //  void* ptr[2] = { (void*)0,(void*)(3 * sizeof(float))};
+  //  unsigned int fi[2] = { 3,3 };
+  //  for (int i = 0; i < 2; i++) {
+  //      glVertexAttribPointer(i, fi[i], GL_FLOAT, GL_FALSE, 6 * sizeof(float), ptr[i]);
+  //      glEnableVertexAttribArray(i);
+  //  }
     // position attribute
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
-    // normal attribute
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
-    glEnableVertexAttribArray(1);
+ 
 
+    Vertex_Type cube = Vertex_Type();
+    Vertex_Type_Inf cubeinf = Vertex_Type_Inf();
+    cubeinf.data = vertices;
+    cubeinf.v_size = 36;
+    cubeinf.v_size_byte = sizeof(vertices);
+    cubeinf.Edata = nullptr;
+    cubeinf.VertexAttri_index = 2;
+    cubeinf.VertexAttri_size = 6*sizeof(float);
+    cubeinf.preVertexAttr_size[0] = 3;
+    cubeinf.preVertexAttr_size[1] = 3;
+    cubeinf.preVertexAttr_start[0] = (void*)0;
+    cubeinf.preVertexAttr_start[1] = (void*)(3*sizeof(float));
+
+    cube.Init_Vertex(cubeinf);
 
     // second, configure the light's VAO (VBO stays the same; the vertices are the same for the light object which is also a 3D cube)
+    /*
     unsigned int lightCubeVAO;
     glGenVertexArrays(1, &lightCubeVAO);
     glBindVertexArray(lightCubeVAO);
 
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBindBuffer(GL_ARRAY_BUFFER,cube.VBO);
     // note that we update the lamp's position attribute's stride to reflect the updated buffer data
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
+*/  Vertex_Type light = Vertex_Type();
+    Vertex_Type_Inf lightinf= Vertex_Type_Inf();
+    lightinf.data = vertices;
+    lightinf.v_size = 36;
+    lightinf.v_size_byte = sizeof(vertices);
+    lightinf.Edata = nullptr;
+    lightinf.VertexAttri_index = 1;
+    lightinf.VertexAttri_size = 6*sizeof(float);
+    lightinf.preVertexAttr_size[0] = 3;
 
-
+    lightinf.preVertexAttr_start[0] = (void*)0;
+    light.Init_Vertex(lightinf);
     // render loop
     // -----------
     while (!glfwWindowShouldClose(window))
@@ -174,8 +201,8 @@ int main()
 
         // be sure to activate shader when setting uniforms/drawing objects
         lightingShader.use();
-        lightingShader.setVec3("objectColor", glm::uvec3(1.0f, 0.5f, 0.31f));
-        lightingShader.setVec3("lightColor", glm::vec3(1.0f, 1.0f, 1.0f));
+        lightingShader.setVec3("objectColor", glm::vec3(1.0f, 0.5f, 0.31f));
+        lightingShader.setVec3("lightColor", glm::vec3(1.0f, 0.5f, 0.31f));
         lightingShader.setVec3("lightPos", lightPos);
         lightingShader.setVec3("viewpos", camera.Position);
 
@@ -190,9 +217,8 @@ int main()
         lightingShader.setMat4("model", model);
 
         // render the cube
-        glBindVertexArray(cubeVAO);
-        glDrawArrays(GL_TRIANGLES, 0, 36);
-
+        cube.send_date2GPU();
+        
 
         // also draw the lamp object
         lightCubeShader.use();
@@ -203,9 +229,8 @@ int main()
         model = glm::scale(model, glm::vec3(0.2f)); // a smaller cube
         lightCubeShader.setMat4("model", model);
 
-        glBindVertexArray(lightCubeVAO);
-        glDrawArrays(GL_TRIANGLES, 0, 36);
-
+        light.send_date2GPU();
+        
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------
@@ -215,9 +240,6 @@ int main()
 
     // optional: de-allocate all resources once they've outlived their purpose:
     // ------------------------------------------------------------------------
-    glDeleteVertexArrays(1, &cubeVAO);
-    glDeleteVertexArrays(1, &lightCubeVAO);
-    glDeleteBuffers(1, &VBO);
 
     // glfw: terminate, clearing all previously allocated GLFW resources.
     // ------------------------------------------------------------------
